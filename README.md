@@ -1,4 +1,4 @@
-# SubnetCalc
+# Subnet-Calculator
 
 A modern, browser-based subnet calculator for both IPv4 and IPv6 networks. Zero dependencies — just static HTML, CSS, and vanilla JavaScript.
 
