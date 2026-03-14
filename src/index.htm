@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPv4 Subnet Calculator</title>
+<link rel="shortcut icon" href="favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="theme.css" rel="stylesheet">
+<script>
+  // Apply saved theme before render to prevent flash
+  (function() {
+    var t = localStorage.getItem('subnet-calc-theme');
+    if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+</script>
+</head>
+<body>
+
+<div class="app page-ipv4">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">v4</div>
+      <h1>Subnet<span>Calc</span> IPv4</h1>
+    </div>
+    <div class="header-right">
+      <nav>
+        <a href="index.htm" class="active">IPv4</a>
+        <a href="ipv6.htm">IPv6</a>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">
+        <span class="icon-sun">&#9728;</span>
+        <span class="icon-moon">&#9790;</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="main-grid">
+
+    <!-- INPUT CARD -->
+    <div class="card">
+      <div class="card-header"><span class="icon icon-cyan">&#9881;</span> Input Parameters</div>
+
+      <div class="quick-select" id="quickSelect">
+        <span class="quick-btn" data-cidr="8">/8</span>
+        <span class="quick-btn" data-cidr="16">/16</span>
+        <span class="quick-btn" data-cidr="20">/20</span>
+        <span class="quick-btn" data-cidr="24">/24</span>
+        <span class="quick-btn" data-cidr="25">/25</span>
+        <span class="quick-btn" data-cidr="26">/26</span>
+        <span class="quick-btn" data-cidr="27">/27</span>
+        <span class="quick-btn" data-cidr="28">/28</span>
+        <span class="quick-btn" data-cidr="30">/30</span>
+        <span class="quick-btn" data-cidr="31">/31</span>
+        <span class="quick-btn" data-cidr="32">/32</span>
+      </div>
+
+      <div class="field">
+        <label class="field-label">IP Address</label>
+        <div class="field-input-wrap">
+          <input type="text" id="ip" value="192.168.1.1" maxlength="15" spellcheck="false">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">CIDR Prefix Length</label>
+        <div class="field-input-wrap">
+          <span class="prefix">/</span>
+          <input type="text" id="cidr" value="24" maxlength="2" style="max-width:60px">
+          <div class="cidr-controls">
+            <div class="cidr-btn" id="cidrUp">&#9650;</div>
+            <div class="cidr-btn" id="cidrDown">&#9660;</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Subnet Mask</label>
+        <div class="field-input-wrap">
+          <input type="text" id="netmask" value="255.255.255.0" maxlength="15" spellcheck="false">
+          <span class="suffix" id="netmaskOk"></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Number of Hosts</label>
+        <div class="field-input-wrap">
+          <input type="text" id="hosts" value="254" maxlength="10" spellcheck="false">
+          <span class="suffix" id="hostsOk"></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Number of Networks (for classful)</label>
+        <div class="field-input-wrap">
+          <input type="text" id="networks" value="" maxlength="10" spellcheck="false" placeholder="e.g. 4">
+          <span class="suffix" id="networksOk"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS CARD -->
+    <div class="card">
+      <div class="card-header"><span class="icon icon-orange">&#9670;</span> Subnet Details</div>
+
+      <div class="result-row">
+        <span class="result-label">Network Class</span>
+        <span id="netClass"><span class="class-badge class-C">Class C</span></span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Network Address</span>
+        <span class="result-value cyan" id="netAddr">192.168.1.0</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Broadcast Address</span>
+        <span class="result-value orange" id="broadcast">192.168.1.255</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Usable Host Range</span>
+        <span class="result-value green" id="hostRange">192.168.1.1 – 192.168.1.254</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Subnet Mask</span>
+        <span class="result-value" id="maskDisplay">255.255.255.0</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Wildcard Mask</span>
+        <span class="result-value" id="wildcard">0.0.0.255</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Total Addresses</span>
+        <span class="result-value" id="totalAddrs">256</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Usable Hosts</span>
+        <span class="result-value cyan" id="usableHosts">254</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Number of Subnets</span>
+        <span class="result-value" id="numSubnets">1</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">CIDR Notation</span>
+        <span class="result-value" id="cidrNotation">192.168.1.0/24</span>
+      </div>
+    </div>
+
+    <!-- BINARY VISUALIZATION -->
+    <div class="card full-width">
+      <div class="card-header"><span class="icon icon-blue">&#9638;</span> Binary Visualization</div>
+
+      <div style="margin-bottom:1rem">
+        <div class="binary-display">
+          <span class="label">IP Address (Color-coded: <span style="color:var(--cyan)">network</span> / <span style="color:var(--orange)">host</span>)</span>
+          <div id="ipColorDisplay" class="ip-color-display" style="background:none;border:none;padding:0.25rem 0;font-size:1.1rem;"></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1rem">
+        <div class="binary-display">
+          <span class="label">Subnet Mask Binary</span>
+          <div id="maskBinary"></div>
+        </div>
+      </div>
+
+      <div>
+        <span class="field-label">Subnet Map (32 bits)</span>
+        <div class="subnet-map" id="subnetMap">
+          <div class="net-portion" id="netPortion" style="width:75%">24 net</div>
+          <div class="host-portion" id="hostPortion">8 host</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMMON SUBNET FINDER -->
+    <div class="card full-width">
+      <div class="card-header"><span class="icon icon-purple">&#8644;</span> Common Subnet Finder</div>
+
+      <div class="common-net-grid">
+        <div>
+          <div class="field">
+            <label class="field-label">First IP Address</label>
+            <div class="field-input-wrap">
+              <input type="text" id="ip1" value="192.168.1.1" maxlength="15" spellcheck="false">
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Second IP Address</label>
+            <div class="field-input-wrap">
+              <input type="text" id="ip2" value="192.168.1.254" maxlength="15" spellcheck="false">
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="result-row">
+            <span class="result-label">Network Address</span>
+            <span class="result-value cyan" id="cNet">–</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">CIDR Prefix</span>
+            <span class="result-value" id="cCidr">–</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">Subnet Mask</span>
+            <span class="result-value" id="cMask">–</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">Broadcast</span>
+            <span class="result-value orange" id="cBroadcast">–</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REFERENCE TABLE -->
+    <div class="card full-width">
+      <div class="card-header"><span class="icon icon-cyan">&#9776;</span> CIDR Reference Table</div>
+
+      <div class="ref-table-wrap">
+        <table class="ref-table" id="refTable">
+          <thead>
+            <tr>
+              <th>CIDR</th>
+              <th>Subnet Mask</th>
+              <th>Wildcard Mask</th>
+              <th>Total IPs</th>
+              <th>Usable Hosts</th>
+              <th># Subnets</th>
+              <th>Class</th>
+            </tr>
+          </thead>
+          <tbody id="refTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>Copyright &copy; 2009–2026 ZeroGlitchX &mdash; IPv4 Subnet Calculator</footer>
+</div>
+
+<script>
+// ── Theme Toggle ──
+document.getElementById('themeToggle').addEventListener('click', function() {
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('subnet-calc-theme', 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('subnet-calc-theme', 'dark');
+  }
+});
+
+// ── Core Functions ──
+function addrToStr(addr) {
+  return [(addr >>> 24) & 255, (addr >>> 16) & 255, (addr >>> 8) & 255, addr & 255].join('.');
+}
+
+function strToAddr(s) {
+  var p = s.split('.');
+  if (p.length !== 4) return NaN;
+  return ((p[0] & 255) << 24 | (p[1] & 255) << 16 | (p[2] & 255) << 8 | (p[3] & 255)) >>> 0;
+}
+
+function cidrToMask(cidr) {
+  if (cidr === 0) return 0;
+  return (~0 << (32 - cidr)) >>> 0;
+}
+
+function cidrToMaskStr(cidr) { return addrToStr(cidrToMask(cidr)); }
+
+function maskToCidr(mask) {
+  var bits = 0, m = mask >>> 0;
+  while (m & 0x80000000) { bits++; m = (m << 1) >>> 0; }
+  return bits;
+}
+
+function isValidMask(mask) {
+  var m = mask >>> 0, foundZero = false;
+  for (var i = 31; i >= 0; i--) {
+    var bit = (m >>> i) & 1;
+    if (bit === 0) foundZero = true;
+    else if (foundZero) return false;
+  }
+  return true;
+}
+
+function getClass(ip) {
+  var first = (ip >>> 24) & 255;
+  if (first < 128) return 'A';
+  if (first < 192) return 'B';
+  if (first < 224) return 'C';
+  if (first < 240) return 'D';
+  return 'E';
+}
+
+function getClassBits(cls) {
+  if (cls === 'A') return 8;
+  if (cls === 'B') return 16;
+  if (cls === 'C') return 24;
+  return 0;
+}
+
+function toBinary8(n) { return ('00000000' + (n >>> 0).toString(2)).slice(-8); }
+
+// ── UI References ──
+var elIp = document.getElementById('ip');
+var elCidr = document.getElementById('cidr');
+var elNetmask = document.getElementById('netmask');
+var elHosts = document.getElementById('hosts');
+var elNetworks = document.getElementById('networks');
+var elNetmaskOk = document.getElementById('netmaskOk');
+var elHostsOk = document.getElementById('hostsOk');
+var elNetworksOk = document.getElementById('networksOk');
+
+var elNetClass = document.getElementById('netClass');
+var elNetAddr = document.getElementById('netAddr');
+var elBroadcast = document.getElementById('broadcast');
+var elHostRange = document.getElementById('hostRange');
+var elMaskDisplay = document.getElementById('maskDisplay');
+var elWildcard = document.getElementById('wildcard');
+var elTotalAddrs = document.getElementById('totalAddrs');
+var elUsableHosts = document.getElementById('usableHosts');
+var elNumSubnets = document.getElementById('numSubnets');
+var elCidrNotation = document.getElementById('cidrNotation');
+var elIpColor = document.getElementById('ipColorDisplay');
+var elMaskBinary = document.getElementById('maskBinary');
+var elNetPortion = document.getElementById('netPortion');
+var elHostPortion = document.getElementById('hostPortion');
+
+// ── Main Update ──
+function fullUpdate(source) {
+  var cidr, mask, ip;
+
+  if (source === 'netmask') {
+    mask = strToAddr(elNetmask.value);
+    if (isNaN(mask)) return;
+    if (isValidMask(mask)) {
+      cidr = maskToCidr(mask);
+      elNetmaskOk.textContent = '';
+    } else {
+      cidr = maskToCidr(mask);
+      elNetmaskOk.textContent = '\u26a0 ' + cidrToMaskStr(cidr);
+      elNetmaskOk.style.color = 'var(--yellow)';
+    }
+    elCidr.value = cidr;
+    setHosts(cidr);
+  } else if (source === 'hosts') {
+    var hosts = Math.max(0, parseInt(elHosts.value));
+    if (isNaN(hosts)) return;
+    if (hosts > 0) hosts++;
+    var bits = 0;
+    while ((hosts >>> bits) > 0) bits++;
+    cidr = Math.max(0, Math.min(32, 32 - bits));
+    elCidr.value = cidr;
+    elNetmask.value = cidrToMaskStr(cidr);
+    elNetmaskOk.textContent = '';
+    var maxHosts = Math.max(0, Math.pow(2, bits) - 2);
+    if (maxHosts != parseInt(elHosts.value)) {
+      elHostsOk.textContent = 'Max: ' + maxHosts;
+      elHostsOk.style.color = 'var(--yellow)';
+    } else {
+      elHostsOk.textContent = '';
+    }
+  } else if (source === 'networks') {
+    var wantedNets = parseInt(elNetworks.value);
+    if (isNaN(wantedNets) || wantedNets < 1) return;
+    ip = strToAddr(elIp.value);
+    if (isNaN(ip)) return;
+    var cls = getClass(ip);
+    var classBits = getClassBits(cls);
+    if (classBits === 0) { elNetworksOk.textContent = 'N/A'; return; }
+    // How many subnet bits needed?
+    var subBits = 0;
+    while (Math.pow(2, subBits) < wantedNets) subBits++;
+    cidr = classBits + subBits;
+    if (cidr > 30) { cidr = 30; }
+    var actualNets = Math.pow(2, cidr - classBits);
+    if (actualNets !== wantedNets) {
+      elNetworksOk.textContent = 'Nearest: ' + actualNets;
+      elNetworksOk.style.color = 'var(--yellow)';
+    } else {
+      elNetworksOk.textContent = '';
+    }
+    elCidr.value = cidr;
+    elNetmask.value = cidrToMaskStr(cidr);
+    elNetmaskOk.textContent = '';
+    setHosts(cidr);
+  } else if (source === 'cidr') {
+    cidr = parseInt(elCidr.value);
+    if (isNaN(cidr)) return;
+    cidr = Math.max(0, Math.min(32, cidr));
+    elCidr.value = cidr;
+    elNetmask.value = cidrToMaskStr(cidr);
+    elNetmaskOk.textContent = '';
+    setHosts(cidr);
+  } else {
+    cidr = parseInt(elCidr.value);
+    if (isNaN(cidr)) return;
+    cidr = Math.max(0, Math.min(32, cidr));
+  }
+
+  ip = strToAddr(elIp.value);
+  if (isNaN(ip)) return;
+  mask = cidrToMask(cidr);
+
+  var netAddr = (ip & mask) >>> 0;
+  var broadcast = (netAddr | (~mask >>> 0)) >>> 0;
+  var first, last;
+  if (cidr === 31) { first = '\u2013'; last = '\u2013'; }
+  else if (cidr === 32) { first = addrToStr(netAddr); last = first; }
+  else { first = addrToStr(netAddr + 1); last = addrToStr(broadcast - 1); }
+
+  var totalAddrs = Math.pow(2, 32 - cidr);
+  var usable = Math.max(0, totalAddrs - 2);
+  if (cidr >= 31) usable = cidr === 31 ? 2 : 1;
+
+  var cls = getClass(ip);
+  var classBits = getClassBits(cls);
+  var numSubnets = classBits > 0 && cidr >= classBits ? Math.pow(2, cidr - classBits) : 'N/A';
+
+  // Update results
+  elNetAddr.textContent = addrToStr(netAddr);
+  elBroadcast.textContent = addrToStr(broadcast);
+  elHostRange.textContent = first === '\u2013' ? '\u2013' : first + ' \u2013 ' + last;
+  elMaskDisplay.textContent = cidrToMaskStr(cidr);
+  elWildcard.textContent = addrToStr((~mask) >>> 0);
+  elTotalAddrs.textContent = totalAddrs.toLocaleString();
+  elUsableHosts.textContent = usable.toLocaleString();
+  elNumSubnets.textContent = typeof numSubnets === 'number' ? numSubnets.toLocaleString() : numSubnets;
+  elCidrNotation.textContent = addrToStr(netAddr) + '/' + cidr;
+  elNetClass.innerHTML = '<span class="class-badge class-' + cls + '">Class ' + cls + '</span>';
+
+  // Update networks field if not the source
+  if (source !== 'networks' && classBits > 0 && cidr >= classBits) {
+    elNetworks.value = Math.pow(2, cidr - classBits);
+    elNetworksOk.textContent = '';
+  }
+
+  updateBinaryDisplay(ip, cidr);
+  updateSubnetMap(cidr);
+  updateQuickSelect(cidr);
+  updateRefTable(cidr);
+}
+
+function setHosts(cidr) {
+  var count = 32 - cidr;
+  var hosts = Math.max(0, Math.pow(2, count) - 2);
+  if (cidr >= 31) hosts = cidr === 31 ? 2 : 1;
+  elHosts.value = hosts;
+  elHostsOk.textContent = '';
+}
+
+function updateBinaryDisplay(ip, cidr) {
+  var octets = [(ip >>> 24) & 255, (ip >>> 16) & 255, (ip >>> 8) & 255, ip & 255];
+  var colorHtml = '';
+  octets.forEach(function(o, idx) {
+    var s = o.toString();
+    var octetStart = idx * 8;
+    var octetEnd = octetStart + 8;
+    if (octetEnd <= cidr) colorHtml += '<span class="net-char">' + s + '</span>';
+    else if (octetStart >= cidr) colorHtml += '<span class="host-char">' + s + '</span>';
+    else colorHtml += '<span class="net-char">' + s + '</span>';
+    if (idx < 3) colorHtml += '<span class="sep">.</span>';
+  });
+  elIpColor.innerHTML = colorHtml;
+
+  var mask = cidrToMask(cidr);
+  var maskOctets = [(mask >>> 24) & 255, (mask >>> 16) & 255, (mask >>> 8) & 255, mask & 255];
+  var binHtml = '', bitIdx = 0;
+  maskOctets.forEach(function(o, idx) {
+    var bits = toBinary8(o);
+    for (var i = 0; i < 8; i++) {
+      binHtml += '<span class="' + (bitIdx < cidr ? 'net-bit' : 'host-bit') + '">' + bits[i] + '</span>';
+      bitIdx++;
+    }
+    if (idx < 3) binHtml += '<span class="dot-sep">.</span>';
+  });
+  elMaskBinary.innerHTML = binHtml;
+}
+
+function updateSubnetMap(cidr) {
+  var netPct = (cidr / 32) * 100;
+  elNetPortion.style.width = Math.max(netPct, 8) + '%';
+  elNetPortion.textContent = cidr + ' net';
+  elHostPortion.textContent = (32 - cidr) + ' host';
+}
+
+function updateQuickSelect(cidr) {
+  document.querySelectorAll('.quick-btn').forEach(function(b) {
+    b.classList.toggle('active', parseInt(b.dataset.cidr) === cidr);
+  });
+}
+
+function updateRefTable(activeCidr) {
+  document.querySelectorAll('#refTableBody tr').forEach(function(r) {
+    r.classList.toggle('active-row', parseInt(r.dataset.cidr) === activeCidr);
+  });
+}
+
+// ── Build Reference Table ──
+function buildRefTable() {
+  var tbody = document.getElementById('refTableBody');
+  var html = '';
+  for (var c = 0; c <= 32; c++) {
+    var mask = cidrToMask(c);
+    var total = Math.pow(2, 32 - c);
+    var usable = Math.max(0, total - 2);
+    if (c === 31) usable = 2;
+    if (c === 32) usable = 1;
+    var cls = '', classBits = 0;
+    if (c <= 8) { cls = 'A'; classBits = 8; }
+    else if (c <= 16) { cls = 'B'; classBits = 16; }
+    else if (c <= 24) { cls = 'C'; classBits = 24; }
+    else { cls = 'C+'; classBits = 24; }
+    var subnets = Math.pow(2, Math.max(0, c - classBits));
+
+    html += '<tr data-cidr="' + c + '">' +
+      '<td>/' + c + '</td>' +
+      '<td>' + cidrToMaskStr(c) + '</td>' +
+      '<td>' + addrToStr((~mask) >>> 0) + '</td>' +
+      '<td>' + total.toLocaleString() + '</td>' +
+      '<td>' + usable.toLocaleString() + '</td>' +
+      '<td>' + subnets.toLocaleString() + '</td>' +
+      '<td>' + cls + '</td>' +
+      '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+// ── Common Subnet Finder ──
+function commonNet() {
+  var ip1 = strToAddr(document.getElementById('ip1').value);
+  var ip2 = strToAddr(document.getElementById('ip2').value);
+  if (isNaN(ip1) || isNaN(ip2)) return;
+
+  var xor = (ip1 ^ ip2) >>> 0;
+  var cidr = 0;
+  for (var i = 31; i >= 0; i--) {
+    if ((xor >>> i) & 1) break;
+    cidr++;
+  }
+
+  var mask = cidrToMask(cidr);
+  var netAddr = (Math.min(ip1, ip2) & mask) >>> 0;
+  var broadcast = (netAddr | ((~mask) >>> 0)) >>> 0;
+
+  document.getElementById('cNet').textContent = addrToStr(netAddr);
+  document.getElementById('cCidr').textContent = '/' + cidr;
+  document.getElementById('cMask').textContent = addrToStr(mask);
+  document.getElementById('cBroadcast').textContent = addrToStr(broadcast);
+}
+
+// ── Event Bindings ──
+elIp.addEventListener('keyup', function() { fullUpdate('ip'); });
+elCidr.addEventListener('keyup', function() { fullUpdate('cidr'); });
+elNetmask.addEventListener('keyup', function() { fullUpdate('netmask'); });
+elHosts.addEventListener('keyup', function() { fullUpdate('hosts'); });
+elNetworks.addEventListener('keyup', function() { fullUpdate('networks'); });
+
+document.getElementById('cidrUp').addEventListener('click', function() {
+  var v = parseInt(elCidr.value) || 0;
+  if (v < 32) { elCidr.value = v + 1; fullUpdate('cidr'); }
+});
+document.getElementById('cidrDown').addEventListener('click', function() {
+  var v = parseInt(elCidr.value) || 0;
+  if (v > 0) { elCidr.value = v - 1; fullUpdate('cidr'); }
+});
+
+document.getElementById('quickSelect').addEventListener('click', function(e) {
+  if (e.target.classList.contains('quick-btn')) {
+    elCidr.value = e.target.dataset.cidr;
+    fullUpdate('cidr');
+  }
+});
+
+document.getElementById('ip1').addEventListener('keyup', commonNet);
+document.getElementById('ip2').addEventListener('keyup', commonNet);
+
+document.getElementById('refTableBody').addEventListener('click', function(e) {
+  var row = e.target.closest('tr');
+  if (row && row.dataset.cidr) {
+    elCidr.value = row.dataset.cidr;
+    fullUpdate('cidr');
+  }
+});
+
+// ── Query String Support ──
+function init() {
+  if (location.search) {
+    var params = new URLSearchParams(location.search);
+    if (params.get('ip')) elIp.value = params.get('ip');
+    if (params.get('cidr')) elCidr.value = params.get('cidr');
+    if (params.get('netmask')) elNetmask.value = params.get('netmask');
+    if (params.get('hosts')) elHosts.value = params.get('hosts');
+  }
+  buildRefTable();
+  fullUpdate('cidr');
+  commonNet();
+}
+
+init();
+</script>
+</body>
+</html>

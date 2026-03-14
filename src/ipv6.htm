@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPv6 Subnet Calculator</title>
+<link rel="shortcut icon" href="favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="theme.css" rel="stylesheet">
+<script>
+  (function() {
+    var t = localStorage.getItem('subnet-calc-theme');
+    if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+</script>
+</head>
+<body>
+
+<div class="app page-ipv6">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">v6</div>
+      <h1>Subnet<span>Calc</span> IPv6</h1>
+    </div>
+    <div class="header-right">
+      <nav>
+        <a href="index.htm">IPv4</a>
+        <a href="ipv6.htm" class="active">IPv6</a>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">
+        <span class="icon-sun">&#9728;</span>
+        <span class="icon-moon">&#9790;</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="main-grid">
+
+    <!-- INPUT -->
+    <div class="card">
+      <div class="card-header"><span class="icon icon-purple">&#9881;</span> Input Parameters</div>
+
+      <div class="quick-select" id="quickSelect">
+        <span class="quick-btn" data-cidr="32">/32</span>
+        <span class="quick-btn" data-cidr="48">/48</span>
+        <span class="quick-btn" data-cidr="56">/56</span>
+        <span class="quick-btn" data-cidr="64">/64</span>
+        <span class="quick-btn" data-cidr="112">/112</span>
+        <span class="quick-btn" data-cidr="126">/126</span>
+        <span class="quick-btn" data-cidr="127">/127</span>
+        <span class="quick-btn" data-cidr="128">/128</span>
+      </div>
+
+      <div class="field">
+        <label class="field-label">IPv6 Address</label>
+        <div class="field-input-wrap">
+          <input type="text" id="ip6" value="2001:0db8:85a3::8a2e:0370:7334" spellcheck="false">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Prefix Length</label>
+        <div class="field-input-wrap">
+          <span class="prefix">/</span>
+          <input type="text" id="prefix" value="64" maxlength="3" style="max-width:70px">
+          <div class="cidr-controls">
+            <div class="cidr-btn" id="prefixUp">&#9650;</div>
+            <div class="cidr-btn" id="prefixDown">&#9660;</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="card">
+      <div class="card-header"><span class="icon icon-orange">&#9670;</span> Subnet Details</div>
+
+      <div class="result-row">
+        <span class="result-label">Address Type</span>
+        <span id="addrType"><span class="scope-badge scope-global">Global Unicast</span></span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Full Address</span>
+        <span class="result-value purple" id="fullAddr">–</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Compressed</span>
+        <span class="result-value" id="compAddr">–</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Network Prefix</span>
+        <span class="result-value cyan" id="netPrefix">–</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">First Address</span>
+        <span class="result-value green" id="firstAddr">–</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Last Address</span>
+        <span class="result-value orange" id="lastAddr">–</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Total Addresses</span>
+        <span class="result-value" id="totalAddrs6">–</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">/64 Networks</span>
+        <span class="result-value" id="num64s">–</span>
+      </div>
+    </div>
+
+    <!-- BINARY -->
+    <div class="card full-width">
+      <div class="card-header"><span class="icon icon-blue">&#9638;</span> Binary Visualization</div>
+
+      <div style="margin-bottom:1rem">
+        <div class="binary-display">
+          <span class="label">Address (Color-coded: <span style="color:var(--purple)">prefix</span> / <span style="color:var(--orange)">interface ID</span>)</span>
+          <div id="colorAddr" style="font-size:0.95rem;margin-top:0.3rem;"></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1rem">
+        <div class="binary-display">
+          <span class="label">Binary Representation</span>
+          <div id="binaryAddr" style="margin-top:0.3rem;"></div>
+        </div>
+      </div>
+
+      <div>
+        <span class="field-label">Prefix Map (128 bits)</span>
+        <div class="subnet-map" id="subnetMap6">
+          <div class="net-portion" id="netPortion6">64 prefix</div>
+          <div class="host-portion" id="hostPortion6">64 interface</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REFERENCE TABLE -->
+    <div class="card full-width">
+      <div class="card-header"><span class="icon icon-purple">&#9776;</span> Common IPv6 Prefix Lengths</div>
+
+      <div class="ref-table-wrap">
+        <table class="ref-table" id="refTable6">
+          <thead>
+            <tr>
+              <th>Prefix</th>
+              <th>Total Addresses</th>
+              <th>Decimal</th>
+              <th>/64 Networks</th>
+              <th>Decimal</th>
+              <th>Typical Use</th>
+            </tr>
+          </thead>
+          <tbody id="refTableBody6"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>Copyright &copy; 2009–2026 ZeroGlitchX &mdash; IPv6 Subnet Calculator</footer>
+</div>
+
+<script>
+// ── Theme Toggle ──
+document.getElementById('themeToggle').addEventListener('click', function() {
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('subnet-calc-theme', 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('subnet-calc-theme', 'dark');
+  }
+});
+
+// ── IPv6 Core using BigInt for 128-bit math ──
+function expandIPv6(addr) {
+  addr = addr.trim();
+  var halves = addr.split('::');
+  var groups = [];
+  if (halves.length === 2) {
+    var left = halves[0] ? halves[0].split(':') : [];
+    var right = halves[1] ? halves[1].split(':') : [];
+    var missing = 8 - left.length - right.length;
+    groups = left.slice();
+    for (var i = 0; i < missing; i++) groups.push('0000');
+    groups = groups.concat(right);
+  } else {
+    groups = addr.split(':');
+  }
+  return groups.map(function(g) { return ('0000' + g).slice(-4); }).slice(0, 8);
+}
+
+function groupsToFull(groups) { return groups.join(':'); }
+
+function compressIPv6(groups) {
+  var best = { start: -1, len: 0 }, cur = { start: -1, len: 0 };
+  for (var i = 0; i < 8; i++) {
+    if (groups[i] === '0000') {
+      if (cur.start === -1) cur.start = i;
+      cur.len++;
+    } else {
+      if (cur.len > best.len) { best.start = cur.start; best.len = cur.len; }
+      cur = { start: -1, len: 0 };
+    }
+  }
+  if (cur.len > best.len) { best.start = cur.start; best.len = cur.len; }
+  if (best.len >= 2) {
+    var left = groups.slice(0, best.start).map(function(g) { return g.replace(/^0+/, '') || '0'; });
+    var right = groups.slice(best.start + best.len).map(function(g) { return g.replace(/^0+/, '') || '0'; });
+    return left.join(':') + '::' + right.join(':');
+  }
+  return groups.map(function(g) { return g.replace(/^0+/, '') || '0'; }).join(':');
+}
+
+function groupsToBigInt(groups) { return BigInt('0x' + groups.join('')); }
+
+function bigIntToGroups(n) {
+  var hex = n.toString(16).padStart(32, '0');
+  var groups = [];
+  for (var i = 0; i < 8; i++) groups.push(hex.substr(i * 4, 4));
+  return groups;
+}
+
+function prefixMask(prefixLen) {
+  if (prefixLen === 0) return 0n;
+  if (prefixLen === 128) return (1n << 128n) - 1n;
+  return ((1n << 128n) - 1n) ^ ((1n << BigInt(128 - prefixLen)) - 1n);
+}
+
+function getAddrType(groups) {
+  var first = parseInt(groups[0], 16);
+  var fullHex = groups.join('');
+  if (fullHex === '00000000000000000000000000000000') return { name: 'Unspecified', cls: 'unspecified' };
+  if (fullHex === '00000000000000000000000000000001') return { name: 'Loopback', cls: 'loopback' };
+  if (groups[0] === '0000' && groups[1] === '0000' && groups[2] === '0000' &&
+      groups[3] === '0000' && groups[4] === '0000' && groups[5] === 'ffff')
+    return { name: 'IPv4-Mapped', cls: 'v4mapped' };
+  if (first >= 0xfe80 && first <= 0xfebf) return { name: 'Link-Local', cls: 'link' };
+  if (first >= 0xfc00 && first <= 0xfdff) return { name: 'Unique Local', cls: 'unique' };
+  if (first >= 0xff00 && first <= 0xffff) return { name: 'Multicast', cls: 'multicast' };
+  if (first >= 0x2000 && first <= 0x3fff) return { name: 'Global Unicast', cls: 'global' };
+  return { name: 'Reserved', cls: 'unspecified' };
+}
+
+function formatBigCount(n) {
+  if (n < 1000n) return n.toString();
+  var exp = 0, t = n;
+  while (t > 1n) { t >>= 1n; exp++; }
+  if ((1n << BigInt(exp)) === n) return '2^' + exp;
+  return n.toString();
+}
+
+function bigIntToDecimal(n) {
+  // Format with commas for readability
+  var s = n.toString();
+  if (s.length <= 3) return s;
+  var result = '';
+  var count = 0;
+  for (var i = s.length - 1; i >= 0; i--) {
+    result = s[i] + result;
+    count++;
+    if (count % 3 === 0 && i > 0) result = ',' + result;
+  }
+  return result;
+}
+
+// ── UI ──
+var elIp6 = document.getElementById('ip6');
+var elPrefix = document.getElementById('prefix');
+
+function fullUpdate6() {
+  var groups;
+  try { groups = expandIPv6(elIp6.value); } catch(e) { return; }
+
+  var prefixLen = parseInt(elPrefix.value);
+  if (isNaN(prefixLen)) return;
+  prefixLen = Math.max(0, Math.min(128, prefixLen));
+  elPrefix.value = prefixLen;
+
+  var addr = groupsToBigInt(groups);
+  var mask = prefixMask(prefixLen);
+  var netAddr = addr & mask;
+  var hostBits = 128 - prefixLen;
+  var lastAddr = netAddr | ((1n << BigInt(hostBits)) - 1n);
+  var totalAddrs = 1n << BigInt(hostBits);
+
+  var netGroups = bigIntToGroups(netAddr);
+  var lastGroups = bigIntToGroups(lastAddr);
+  var addrType = getAddrType(groups);
+
+  var num64s;
+  if (prefixLen <= 64) {
+    num64s = 1n << BigInt(64 - prefixLen);
+  } else {
+    num64s = 0n;
+  }
+
+  document.getElementById('fullAddr').textContent = groupsToFull(groups);
+  document.getElementById('compAddr').textContent = compressIPv6(groups);
+  document.getElementById('netPrefix').textContent = compressIPv6(netGroups) + '/' + prefixLen;
+  document.getElementById('firstAddr').textContent = compressIPv6(netGroups);
+  document.getElementById('lastAddr').textContent = compressIPv6(lastGroups);
+
+  // Total addresses: show 2^n notation + decimal
+  var totalPow = formatBigCount(totalAddrs);
+  var totalDec = bigIntToDecimal(totalAddrs);
+  if (totalPow !== totalDec) {
+    document.getElementById('totalAddrs6').textContent = totalPow + '  (' + totalDec + ')';
+  } else {
+    document.getElementById('totalAddrs6').textContent = totalDec;
+  }
+
+  // /64 Networks: show 2^n notation + decimal
+  if (prefixLen <= 64) {
+    var net64Pow = formatBigCount(num64s);
+    var net64Dec = bigIntToDecimal(num64s);
+    if (net64Pow !== net64Dec) {
+      document.getElementById('num64s').textContent = net64Pow + '  (' + net64Dec + ')';
+    } else {
+      document.getElementById('num64s').textContent = net64Dec;
+    }
+  } else {
+    document.getElementById('num64s').textContent = 'N/A (subnet of /64)';
+  }
+
+  document.getElementById('addrType').innerHTML = '<span class="scope-badge scope-' + addrType.cls + '">' + addrType.name + '</span>';
+
+  updateBinaryDisplay6(groups, prefixLen);
+  updateSubnetMap6(prefixLen);
+  updateQuickSelect6(prefixLen);
+  updateRefTable6(prefixLen);
+}
+
+function updateBinaryDisplay6(groups, prefixLen) {
+  var colorHtml = '', bitPos = 0;
+  groups.forEach(function(g, idx) {
+    for (var c = 0; c < 4; c++) {
+      var cls = bitPos < prefixLen ? 'net-char' : 'host-char';
+      colorHtml += '<span class="' + cls + '">' + g[c] + '</span>';
+      bitPos += 4;
+    }
+    if (idx < 7) colorHtml += '<span class="sep-char">:</span>';
+  });
+  document.getElementById('colorAddr').innerHTML = colorHtml;
+
+  var binHtml = '';
+  bitPos = 0;
+  groups.forEach(function(g, idx) {
+    var val = parseInt(g, 16);
+    var bits = val.toString(2).padStart(16, '0');
+    for (var i = 0; i < 16; i++) {
+      var cls = bitPos < prefixLen ? 'net-bit' : 'host-bit';
+      binHtml += '<span class="' + cls + '">' + bits[i] + '</span>';
+      bitPos++;
+      if (i === 3 || i === 7 || i === 11) binHtml += ' ';
+    }
+    if (idx < 7) binHtml += '<span class="sep-char"> : </span>';
+    if (idx === 3) binHtml += '<br>';
+  });
+  document.getElementById('binaryAddr').innerHTML = binHtml;
+}
+
+function updateSubnetMap6(prefixLen) {
+  var netPct = (prefixLen / 128) * 100;
+  document.getElementById('netPortion6').style.width = Math.max(netPct, 8) + '%';
+  document.getElementById('netPortion6').textContent = prefixLen + ' prefix';
+  document.getElementById('hostPortion6').textContent = (128 - prefixLen) + ' interface';
+}
+
+function updateQuickSelect6(prefixLen) {
+  document.querySelectorAll('.quick-btn').forEach(function(b) {
+    b.classList.toggle('active', parseInt(b.dataset.cidr) === prefixLen);
+  });
+}
+
+function updateRefTable6(activePrefix) {
+  document.querySelectorAll('#refTableBody6 tr').forEach(function(r) {
+    r.classList.toggle('active-row', parseInt(r.dataset.cidr) === activePrefix);
+  });
+}
+
+function buildRefTable6() {
+  var entries = [
+    [12, 'IANA allocation to RIRs'],
+    [16, 'RIR allocation minimum'],
+    [20, 'RIR to large ISP'],
+    [24, 'Large ISP internal'],
+    [28, 'ISP allocation'],
+    [32, 'ISP to customer (site)'],
+    [36, 'Large enterprise'],
+    [40, 'Medium enterprise'],
+    [44, 'Small enterprise'],
+    [48, 'Customer site (standard)'],
+    [52, 'Subnet of /48'],
+    [56, 'Customer (conservative)'],
+    [60, 'Subnet of /56'],
+    [64, 'Single LAN / subnet'],
+    [80, 'Rarely used'],
+    [96, 'IPv4-mapped prefix'],
+    [112, 'Point-to-point (legacy)'],
+    [126, 'Point-to-point link'],
+    [127, 'Point-to-point (RFC 6164)'],
+    [128, 'Single host / loopback'],
+  ];
+
+  var html = '';
+  entries.forEach(function(e) {
+    var pLen = e[0], use = e[1];
+    var hostBits = 128 - pLen;
+    var totalAddrs = 1n << BigInt(hostBits);
+    var num64s = pLen <= 64 ? (1n << BigInt(64 - pLen)) : 0n;
+
+    html += '<tr data-cidr="' + pLen + '">' +
+      '<td>/' + pLen + '</td>' +
+      '<td>' + formatBigCount(totalAddrs) + '</td>' +
+      '<td style="font-size:0.65rem;color:var(--text-muted)">' + bigIntToDecimal(totalAddrs) + '</td>' +
+      '<td>' + (pLen <= 64 ? formatBigCount(num64s) : '\u2014') + '</td>' +
+      '<td style="font-size:0.65rem;color:var(--text-muted)">' + (pLen <= 64 ? bigIntToDecimal(num64s) : '\u2014') + '</td>' +
+      '<td style="font-family:Outfit,sans-serif;color:var(--text-secondary)">' + use + '</td>' +
+      '</tr>';
+  });
+  document.getElementById('refTableBody6').innerHTML = html;
+}
+
+// ── Events ──
+elIp6.addEventListener('keyup', fullUpdate6);
+elPrefix.addEventListener('keyup', fullUpdate6);
+
+document.getElementById('prefixUp').addEventListener('click', function() {
+  var v = parseInt(elPrefix.value) || 0;
+  if (v < 128) { elPrefix.value = v + 1; fullUpdate6(); }
+});
+document.getElementById('prefixDown').addEventListener('click', function() {
+  var v = parseInt(elPrefix.value) || 0;
+  if (v > 0) { elPrefix.value = v - 1; fullUpdate6(); }
+});
+
+document.getElementById('quickSelect').addEventListener('click', function(e) {
+  if (e.target.classList.contains('quick-btn')) {
+    elPrefix.value = e.target.dataset.cidr;
+    fullUpdate6();
+  }
+});
+
+document.getElementById('refTableBody6').addEventListener('click', function(e) {
+  var row = e.target.closest('tr');
+  if (row && row.dataset.cidr) {
+    elPrefix.value = row.dataset.cidr;
+    fullUpdate6();
+  }
+});
+
+// Init
+buildRefTable6();
+fullUpdate6();
+</script>
+</body>
+</html>
